@@ -1,6 +1,7 @@
 import psycopg2
 from datetime import datetime
 import re
+import os
 
 # Função para normalizar números (remove vírgulas e pontos desnecessários)
 def normalize_number(number_str):
@@ -18,11 +19,11 @@ def insert_data_postgre(bill_no, booking, container_input, seals_input, number_p
     try:
         # Conectar ao banco de dados PostgreSQL
         connection = psycopg2.connect(
-            user="kpm",
-            password="@Kpm<102030>",
-            host="89.117.17.6",
-            port="5432",
-            database="pdf_data"
+            user=os.getenv("POSTGRES_USER"),
+            password=os.getenv("POSTGRES_PASSWORD"),
+            host=os.getenv("POSTGRES_HOST"),
+            port=os.getenv("POSTGRES_PORT"),
+            database=os.getenv("POSTGRES_DATABASE")
         )
         cursor = connection.cursor()
 

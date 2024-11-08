@@ -1,20 +1,20 @@
 import pyodbc
 from datetime import datetime
 import re
+import os
 
-# Função para conectar ao SQL Server
 def connect_to_sqlserver():
     try:
         connection = pyodbc.connect(
             'DRIVER={ODBC Driver 17 for SQL Server};'
-            'SERVER=kpm.sql.headcargo.com.br,9322;'
-            'DATABASE=HeadCARGO_KPM_HOMOLOGACAO;'
-            'UID=hc_kpm_ti;'
-            'PWD=971639DA-D739-4C0F-83D5-6E34037092FD'
+            f"SERVER={os.getenv('SQLSERVER_HOST')};"
+            f"DATABASE={os.getenv('SQLSERVER_DATABASE')};"
+            f"UID={os.getenv('SQLSERVER_USER')};"
+            f"PWD={os.getenv('SQLSERVER_PASSWORD')};"
         )
         return connection
-    except Exception as error:
-        raise Exception(f"Erro ao conectar ao SQL Server: {error}")
+    except Exception as e:
+        print(f"Erro ao conectar ao SQL Server: {e}")
 
 # Função para obter o maior ID atual em uma tabela
 def get_max_id_from_table(table_name, id_column):
