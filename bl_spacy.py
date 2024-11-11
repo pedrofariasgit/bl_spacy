@@ -1,3 +1,5 @@
+bl_spacy.py
+
 import os
 import fitz  # PyMuPDF para a IA do Google (Vertex)
 import google.generativeai as genai
