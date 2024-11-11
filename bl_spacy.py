@@ -1,5 +1,3 @@
-bl_spacy.py
-
 import os
 import fitz  # PyMuPDF para a IA do Google (Vertex)
 import google.generativeai as genai
@@ -23,6 +21,7 @@ from anexar_arquivo import process_and_insert_file
 # Carregar as variáveis de ambiente
 load_dotenv()
 GOOGLE_API_KEY = st.secrets.get("GOOGLE_API_KEY", os.getenv("GOOGLE_API_KEY"))
+#GOOGLE_API_KEY = os.getenv('GOOGLE_API_KEY')
 
 # Configurar a API do Google Vertex
 if GOOGLE_API_KEY:
