@@ -201,7 +201,7 @@ def main_page():
 
                     # Realiza o upload do arquivo no storage e insere nas tabelas
                     if uploaded_file:
-                        process_and_insert_file(uploaded_file)
+                        process_and_insert_file(uploaded_file, db_data["idprocesso"])
 
                     # Obtenha o IdConhecimento_Embarque da integração
                     next_id_conhecimento = main_integration({
