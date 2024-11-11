@@ -5,9 +5,11 @@ import uuid
 import os
 from datetime import datetime
 import streamlit as st
+from dotenv import load_dotenv
 
-# Configurações gerais
-TOKEN = "eyJhbGciOiJodHRwOi8vd3d3LnczLm9yZy8yMDAxLzA0L3htbGRzaWctbW9yZSNobWFjLXNoYTI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1laWRlbnRpZmllciI6IjU4YjVmNWU3LTgyYTItNDEyMS05ODM2LWY3YzliZmQ3NjM4YSIsImNvbnRhaW5lciI6ImtwbSIsImlzcyI6IkhlYWRTb2Z0IiwiYXVkIjoiRmlsZVN0cmVhbSJ9.BldzJwg8hP9eT7IiZoAE6eB7UbKoyVge9mx1fawHnVU"
+load_dotenv()
+TOKEN = st.secrets.get("TOKEN", os.getenv("TOKEN"))
+#TOKEN = os.getenv('TOKEN')
 STORAGE_API_URL = "https://api.headsoft.com.br/geral/blob-stream/private"
 
 # Função para calcular o SHA-512 do conteúdo do arquivo
@@ -18,7 +20,7 @@ def calculate_file_hash_sha512(file_content):
     return sha512_hash.hexdigest()
 
 # Função para processar e inserir o arquivo, forçando um novo hash
-def process_and_insert_file(uploaded_file):
+def process_and_insert_file(uploaded_file, id_processo):
     # Salvar o arquivo enviado pelo usuário como temporário e obter seu nome
     file_name = uploaded_file.name
     file_content = bytearray(uploaded_file.getvalue())
@@ -113,6 +115,25 @@ def process_and_insert_file(uploaded_file):
 
         conn.commit()
         st.success(f"Arquivo registrado com sucesso nas tabelas com IdArquivo = {next_id_arquivo}")
+
+        # Selecionar IdProjeto_Atividade baseado em IdProcesso
+        cursor.execute("""
+            SELECT IdProjeto_Atividade FROM mov_Logistica_House
+            WHERE IdLogistica_House = ?
+        """, id_processo)
+        result = cursor.fetchone()
+
+        if result:
+            id_projeto_atividade = result[0]
+            # Inserir na tabela `mov_Projeto_Atividade_Arquivo`
+            cursor.execute("""
+                INSERT INTO mov_Projeto_Atividade_Arquivo (IdArquivo, IdProjeto_Atividade)
+                VALUES (?, ?)
+            """, next_id_arquivo, id_projeto_atividade)
+            conn.commit()
+            st.success("Inserção bem-sucedida na tabela mov_Projeto_Atividade_Arquivo.")
+        else:
+            st.warning("Nenhum IdProjeto_Atividade correspondente encontrado.")
 
     except pyodbc.IntegrityError as e:
         st.error(f"Erro de integridade no banco de dados: {e}")
