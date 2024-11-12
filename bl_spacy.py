@@ -174,7 +174,7 @@ def main_page():
             google_data_cleaned = google_data.strip().strip("```json").strip()
             google_data_json = json.loads(google_data_cleaned)
         except json.JSONDecodeError as e:
-            st.error(f"Erro ao processar o JSON: {e}")
+            st.error(f"Erro ao processar o PDF, preencha os campos manualmente: {e}")
             google_data_json = {}
 
         # Função auxiliar para usar st.session_state ao invés de sobrescrever as edições do usuário
