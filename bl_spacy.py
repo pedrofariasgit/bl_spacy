@@ -16,6 +16,7 @@ from teste_vertex import find_specific_word_with_gemini
 from datetime import datetime
 from insert_ncm import process_and_insert_ncm
 import base64
+from storage_arq import process_and_insert_file
 
 # Carregar as variáveis de ambiente
 load_dotenv()
@@ -184,8 +185,6 @@ def main_page():
 
         # Preencher campos via Google Vertex AI
         bill_no = st.text_input("Bill of Lading Number", get_or_set("bill_no", google_data_json.get("B/L No", "")))
-
-        # Preencher campos via Google Vertex AI
         booking = st.text_input("Booking", get_or_set("booking", google_data_json.get("Booking No", google_data_json.get("Booking", ""))))
 
         # Tratamento para Container/Seals (tentar dividir, mas lidar com erro se o formato for inesperado)
@@ -239,6 +238,10 @@ def main_page():
                         description_packages, numero_processo_input, db_data["idcia"], db_data["idprocesso"]
                     )
                     st.write("Dados inseridos com sucesso no Portal!")
+
+                    # Realiza o upload do arquivo no storage e insere nas tabelas
+                    if uploaded_file:
+                        process_and_insert_file(uploaded_file, db_data["idprocesso"])
                     
                     # Obtenha o IdConhecimento_Embarque da integração
                     next_id_conhecimento = main_integration({
