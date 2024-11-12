@@ -23,7 +23,8 @@ from docx import Document
 # Carregar as variáveis de ambiente
 load_dotenv()
 #GOOGLE_API_KEY = os.getenv('GOOGLE_API_KEY')
-GOOGLE_API_KEY = st.secrets.get("GOOGLE_API_KEY", os.getenv("GOOGLE_API_KEY"))
+#GOOGLE_API_KEY = st.secrets.get("GOOGLE_API_KEY", os.getenv("GOOGLE_API_KEY"))
+GOOGLE_API_KEY = st.secrets["GOOGLE_API_KEY"]
 
 # Configurar a API do Google Vertex
 if GOOGLE_API_KEY:
