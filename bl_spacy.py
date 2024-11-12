@@ -9,7 +9,6 @@ from spacy.pipeline.span_finder import DEFAULT_SPAN_FINDER_MODEL
 from dotenv import load_dotenv
 from io import BytesIO
 import json
-import pandas as pd
 from insert_postgre import insert_data_postgre
 from insert_sqlserver import main_integration  
 from db_select import get_process_data
@@ -18,13 +17,11 @@ from datetime import datetime
 from insert_ncm import process_and_insert_ncm
 import base64
 from storage_arq import process_and_insert_file
-from docx import Document 
 
 # Carregar as variáveis de ambiente
 load_dotenv()
-#GOOGLE_API_KEY = os.getenv('GOOGLE_API_KEY')
 #GOOGLE_API_KEY = st.secrets.get("GOOGLE_API_KEY", os.getenv("GOOGLE_API_KEY"))
-GOOGLE_API_KEY = st.secrets["GOOGLE_API_KEY"]
+GOOGLE_API_KEY = os.getenv('GOOGLE_API_KEY')
 
 # Configurar a API do Google Vertex
 if GOOGLE_API_KEY:
@@ -91,7 +88,8 @@ def load_model():
             return spacy.load("modelo_ner")
         else:
             st.write("Iniciando um novo modelo...")
-            nlp = spacy.blank("en")
+            nlp = spacy.blank("en")  # Cria um modelo spaCy vazio
+            # Adicionando o SpanFinder ao pipeline
             config = {
                 "threshold": 0.5,
                 "spans_key": "my_spans",
@@ -103,41 +101,40 @@ def load_model():
             return nlp
     except Exception as e:
         st.error(f"Erro ao carregar o modelo SpaCy: {e}")
-        return None
+        return None  # Certifique-se de retornar None se houver erro
 
 # Carregar o modelo SpaCy
 nlp = load_model()
 
-# Funções para extrair texto de diferentes tipos de arquivo
-def extract_text_from_pdf(pdf_bytes):
+# Função para extrair texto da primeira página do PDF
+def extract_text_from_all_pages(pdf_bytes):
     try:
         doc = fitz.open(stream=pdf_bytes, filetype="pdf")
-        text = ""
-        for page in doc:
-            text += page.get_text()
+        first_page = doc.load_page(0)  # Carrega apenas a primeira página
+        text = first_page.get_text()  # Extrai o texto da primeira página
         return text
     except Exception as e:
         st.error(f"Erro ao processar o PDF: {e}")
         return ""
 
-def extract_text_from_word(word_bytes):
-    try:
-        document = Document(BytesIO(word_bytes))
-        return "\n".join([para.text for para in document.paragraphs])
-    except Exception as e:
-        st.error(f"Erro ao processar o arquivo Word: {e}")
-        return ""
+# Função para adicionar spans ao documento com verificações
+def add_span(doc, value, label):
+    if value and value in doc.text:
+        start = doc.text.find(value)
+        end = start + len(value)
+        if start != -1 and start < len(doc.text) and end <= len(doc.text):  # Verifica se os índices estão corretos
+            return (start, end, label)  # Retorna a tupla (start_char, end_char, label)
+    return None
 
-def extract_text_from_excel(excel_bytes):
-    try:
-        excel_data = pd.read_excel(BytesIO(excel_bytes), sheet_name=None)
-        text = ""
-        for sheet_name, sheet_data in excel_data.items():
-            text += sheet_data.to_string(index=False)
-        return text
-    except Exception as e:
-        st.error(f"Erro ao processar o arquivo Excel: {e}")
-        return ""
+# Treinar o modelo com novos exemplos rotulados
+def train_model(nlp, examples):
+    optimizer = nlp.begin_training()
+    for i in range(20):  # Realize múltiplas iterações para melhorar o aprendizado
+        for text, annotations in examples:
+            doc = nlp.make_doc(text)
+            example = Example.from_dict(doc, annotations)
+            nlp.update([example], sgd=optimizer)
+    nlp.to_disk("modelo_ner")  # Salve o modelo atualizado
 
 # Função principal
 def main_page():
@@ -155,8 +152,8 @@ def main_page():
         st.error("Não foi possível carregar o modelo SpaCy. Verifique o modelo ou inicie um novo.")
         return
 
-    # Campo de upload de arquivo
-    uploaded_file = st.file_uploader("Escolha um arquivo", type=["pdf", "docx", "xls", "xlsx"], key="file_upload_main")
+    # Campo de upload de arquivo aparece primeiro
+    uploaded_file = st.file_uploader("Escolha um arquivo PDF", type="pdf")
     numero_processo_input = st.text_input("Número do Processo")
 
     # Verificar se o número do processo foi informado e buscar os dados no banco de dados
@@ -165,32 +162,22 @@ def main_page():
     else:
         db_data = None
 
-    # Processar o arquivo apenas se for carregado
-    if uploaded_file:
-        file_extension = uploaded_file.name.split(".")[-1].lower()
-        
-        if file_extension == "pdf":
-            pdf_bytes = uploaded_file.read()  # Ler como bytes
-            extracted_text = extract_text_from_pdf(pdf_bytes)
-            google_data = find_specific_word_with_gemini(pdf_bytes)  # Somente para PDF
-        elif file_extension == "docx":
-            extracted_text = extract_text_from_word(uploaded_file.read())
-            google_data = extracted_text
-        elif file_extension in ["xls", "xlsx"]:
-            extracted_text = extract_text_from_excel(uploaded_file.read())
-            google_data = extracted_text
+    if uploaded_file or db_data:
+        if uploaded_file:
+            pdf_bytes = BytesIO(uploaded_file.read())
+            google_data = find_specific_word_with_gemini(pdf_bytes)
         else:
-            st.error("Tipo de arquivo não suportado.")
-            return
+            google_data = "{}"
 
-
-        # Processar dados extraídos do Google Vertex apenas para PDF
+        # Tenta processar o JSON da Google Vertex
         try:
             google_data_cleaned = google_data.strip().strip("```json").strip()
-            google_data_json = json.loads(google_data_cleaned) if file_extension == "pdf" else {}
-        except json.JSONDecodeError:
+            google_data_json = json.loads(google_data_cleaned)
+        except json.JSONDecodeError as e:
+            st.error(f"Erro ao processar o PDF, preencha os campos manualmente: {e}")
             google_data_json = {}
 
+        # Função auxiliar para usar st.session_state ao invés de sobrescrever as edições do usuário
         def get_or_set(key, default_value):
             if key not in st.session_state:
                 st.session_state[key] = default_value
@@ -200,33 +187,47 @@ def main_page():
         bill_no = st.text_input("Bill of Lading Number", get_or_set("bill_no", google_data_json.get("B/L No", "")))
         booking = st.text_input("Booking", get_or_set("booking", google_data_json.get("Booking No", google_data_json.get("Booking", ""))))
 
-        # Tratamento para Container/Seals
+        # Tratamento para Container/Seals (tentar dividir, mas lidar com erro se o formato for inesperado)
         container_seals = google_data_json.get("Container/Seals", "")
-        if container_seals:
-            parts = container_seals.split("/")
-            if len(parts) == 2:
-                container, seals = parts
-            elif len(parts) == 1:
-                container, seals = parts[0], ""
+        if container_seals:  # Verifica se container_seals não é None ou vazio
+            if "/" in container_seals:
+                try:
+                    container, seals = container_seals.split('/')
+                except ValueError:
+                    container, seals = container_seals, ""
             else:
-                container, seals = "", ""
+                container = container_seals
+                seals = container_seals
         else:
-            container, seals = "", ""
-
+            container = ""
+            seals = ""
 
         container_input = st.text_input("Container", get_or_set("container", container))
         seals_input = st.text_input("Seals", get_or_set("seals", seals))
+
+        # Acessando as chaves corretas para "Number of pieces" e "Wooden Package"
         number_pieces = st.text_input("Number of pieces", get_or_set("number_pieces", google_data_json.get("Number of pieces", "")))
         wooden_package = st.text_input("Wooden Package", get_or_set("wooden_package", google_data_json.get("WOODEN PACKAGE", "")))
+
         gross_weight = st.text_input("Gross Weight Cargo", get_or_set("gross_weight", google_data_json.get("Gross Weight Cargo", "")))
         measurement = st.text_input("Measurement", get_or_set("measurement", google_data_json.get("Measurement", "")))
         ncm = st.text_input("NCM", get_or_set("ncm", google_data_json.get("NCM", "")))
 
+        # Preencher campos automaticamente se dados do banco de dados foram encontrados
         if db_data:
             port_loading = st.text_input("Port of Loading", get_or_set("port_loading", db_data.get("port_loading", "")))
             port_discharge = st.text_input("Port of Discharge", get_or_set("port_discharge", db_data.get("port_discharge", "")))
             kind_package = st.text_input("Kind of Package", get_or_set("kind_package", db_data.get("kind_package", "")))
             description_packages = st.text_area("Description of Packages", get_or_set("description_packages", db_data.get("description_packages", "")))
+
+        # Tenta processar o JSON da Google Vertex
+        try:
+            google_data_cleaned = google_data.strip().strip("```json").strip()
+            google_data_json = json.loads(google_data_cleaned)
+                                   
+        except json.JSONDecodeError as e:
+            st.error(f"Erro ao processar o JSON: {e}")
+            google_data_json = {}
 
         if st.button("Salvar e Treinar Modelo"):
             if db_data:
@@ -237,8 +238,12 @@ def main_page():
                         description_packages, numero_processo_input, db_data["idcia"], db_data["idprocesso"]
                     )
                     st.write("Dados inseridos com sucesso no Portal!")
+
+                    # Realiza o upload do arquivo no storage e insere nas tabelas
                     if uploaded_file:
                         process_and_insert_file(uploaded_file, db_data["idprocesso"])
+                    
+                    # Obtenha o IdConhecimento_Embarque da integração
                     next_id_conhecimento = main_integration({
                         "idprocesso": db_data["idprocesso"],
                         "bill_no": bill_no,
@@ -259,8 +264,11 @@ def main_page():
                         "kind_package": db_data["kind_package"]
                     })
                     st.write("Dados inseridos com sucesso no HeadCargo!")
+                    
+                    # Chame o process_and_insert_ncm com o next_id_conhecimento
                     process_and_insert_ncm(ncm, db_data["idprocesso"], next_id_conhecimento)
 
+                    # Prepare os exemplos com a estrutura correta
                     examples = [
                         (value, {"entities": [(0, len(value), label)]})
                         for value, label in [
@@ -278,23 +286,28 @@ def main_page():
                             (kind_package, "KIND_PACKAGE"),
                             (description_packages, "DESCRIPTION_PACKAGES"),
                         ]
-                        if value  
+                        if value  # Apenas inclua o campo se ele contiver um valor
                     ]
 
+                    # Função para treinar o modelo com os exemplos formatados corretamente
                     def train_model(nlp, examples):
                         optimizer = nlp.initialize()
-                        for _ in range(20): 
+                        for i in range(20): 
                             for text, annotations in examples:
                                 doc = nlp.make_doc(text)
                                 example = Example.from_dict(doc, annotations)
                                 nlp.update([example], sgd=optimizer)
                         nlp.to_disk("modelo_ner")  
 
+                    # Chame a função train_model com os exemplos formatados corretamente
                     train_model(nlp, examples)
                     st.write("Modelo IA treinado com sucesso!")
 
+
                 except Exception as e:
                     st.error(f"Erro ao inserir dados no PostgreSQL/SQL Server: {e}")
+
+                return
 
 add_logo()
 
