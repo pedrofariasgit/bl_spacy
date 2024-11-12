@@ -16,7 +16,6 @@ from teste_vertex import find_specific_word_with_gemini
 from datetime import datetime
 from insert_ncm import process_and_insert_ncm
 import base64
-from anexar_arquivo import process_and_insert_file
 
 # Carregar as variáveis de ambiente
 load_dotenv()
@@ -28,6 +27,31 @@ if GOOGLE_API_KEY:
     genai.configure(api_key=GOOGLE_API_KEY)
 else:
     st.error("Chave da API do Google Vertex não encontrada.")
+
+# Função para carregar usuários e senhas
+def load_users():
+    file_path = os.path.join(os.path.dirname(__file__), 'users.json')
+    with open(file_path, 'r') as f:
+        return json.load(f)
+
+# Função de login
+def login_page():
+    st.title("Login")
+    users = load_users()
+    usernames = [user['username'] for user in users]
+
+    username = st.text_input("Usuário")
+    password = st.text_input("Senha", type="password")
+
+    if st.button("Entrar"):
+        if username in usernames:
+            user = next(user for user in users if user['username'] == username)
+            if user['password'] == password:
+                st.session_state['logged_in'] = True
+            else:
+                st.error("Senha incorreta")
+        else:
+            st.error("Usuário não encontrado")
 
 # Função para converter a imagem em base64
 def get_base64_image(image_path):
@@ -111,7 +135,15 @@ def train_model(nlp, examples):
             nlp.update([example], sgd=optimizer)
     nlp.to_disk("modelo_ner")  # Salve o modelo atualizado
 
+# Função principal
 def main_page():
+    if 'logged_in' not in st.session_state:
+        st.session_state['logged_in'] = False
+
+    if not st.session_state['logged_in']:
+        login_page()  # Exibe a tela de login se o usuário não estiver logado
+        return  # Sai da função main_page se o usuário não está logado
+    
     st.title("BL/DRAFT - KPM Logistics")
 
     # Verifica se o modelo foi carregado corretamente
@@ -120,7 +152,7 @@ def main_page():
         return
 
     # Campo de upload de arquivo aparece primeiro
-    uploaded_file = st.file_uploader("Escolha um arquivo PDF", type="pdf", key="file_upload_main")
+    uploaded_file = st.file_uploader("Escolha um arquivo PDF", type="pdf")
     numero_processo_input = st.text_input("Número do Processo")
 
     # Verificar se o número do processo foi informado e buscar os dados no banco de dados
@@ -152,11 +184,13 @@ def main_page():
 
         # Preencher campos via Google Vertex AI
         bill_no = st.text_input("Bill of Lading Number", get_or_set("bill_no", google_data_json.get("B/L No", "")))
+
+        # Preencher campos via Google Vertex AI
         booking = st.text_input("Booking", get_or_set("booking", google_data_json.get("Booking No", google_data_json.get("Booking", ""))))
 
         # Tratamento para Container/Seals (tentar dividir, mas lidar com erro se o formato for inesperado)
         container_seals = google_data_json.get("Container/Seals", "")
-        if container_seals:
+        if container_seals:  # Verifica se container_seals não é None ou vazio
             if "/" in container_seals:
                 try:
                     container, seals = container_seals.split('/')
@@ -187,22 +221,25 @@ def main_page():
             kind_package = st.text_input("Kind of Package", get_or_set("kind_package", db_data.get("kind_package", "")))
             description_packages = st.text_area("Description of Packages", get_or_set("description_packages", db_data.get("description_packages", "")))
 
-        # Botão de salvar e treinar modelo
+        # Tenta processar o JSON da Google Vertex
+        try:
+            google_data_cleaned = google_data.strip().strip("```json").strip()
+            google_data_json = json.loads(google_data_cleaned)
+                                   
+        except json.JSONDecodeError as e:
+            st.error(f"Erro ao processar o JSON: {e}")
+            google_data_json = {}
+
         if st.button("Salvar e Treinar Modelo"):
             if db_data:
                 try:
-                    # Inserir dados no PostgreSQL
                     insert_data_postgre(
                         bill_no, booking, container_input, seals_input, number_pieces, gross_weight, measurement, ncm, wooden_package,
                         port_loading, port_discharge, db_data["final_delivery"], kind_package, 
                         description_packages, numero_processo_input, db_data["idcia"], db_data["idprocesso"]
                     )
                     st.write("Dados inseridos com sucesso no Portal!")
-
-                    # Realiza o upload do arquivo no storage e insere nas tabelas
-                    if uploaded_file:
-                        process_and_insert_file(uploaded_file, db_data["idprocesso"])
-
+                    
                     # Obtenha o IdConhecimento_Embarque da integração
                     next_id_conhecimento = main_integration({
                         "idprocesso": db_data["idprocesso"],
@@ -224,7 +261,7 @@ def main_page():
                         "kind_package": db_data["kind_package"]
                     })
                     st.write("Dados inseridos com sucesso no HeadCargo!")
-
+                    
                     # Chame o process_and_insert_ncm com o next_id_conhecimento
                     process_and_insert_ncm(ncm, db_data["idprocesso"], next_id_conhecimento)
 
@@ -250,16 +287,27 @@ def main_page():
                     ]
 
                     # Função para treinar o modelo com os exemplos formatados corretamente
+                    def train_model(nlp, examples):
+                        optimizer = nlp.initialize()
+                        for i in range(20): 
+                            for text, annotations in examples:
+                                doc = nlp.make_doc(text)
+                                example = Example.from_dict(doc, annotations)
+                                nlp.update([example], sgd=optimizer)
+                        nlp.to_disk("modelo_ner")  
+
+                    # Chame a função train_model com os exemplos formatados corretamente
                     train_model(nlp, examples)
                     st.write("Modelo IA treinado com sucesso!")
+
 
                 except Exception as e:
                     st.error(f"Erro ao inserir dados no PostgreSQL/SQL Server: {e}")
 
                 return
 
-
 add_logo()
 
 if __name__ == "__main__":
     main_page()
+
