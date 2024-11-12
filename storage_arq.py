@@ -8,8 +8,8 @@ import streamlit as st
 from dotenv import load_dotenv
 
 load_dotenv()
-TOKEN = st.secrets.get("TOKEN", os.getenv("TOKEN"))
-#TOKEN = os.getenv('TOKEN')
+#TOKEN = st.secrets.get("TOKEN", os.getenv("TOKEN"))
+TOKEN = os.getenv('TOKEN')
 STORAGE_API_URL = "https://api.headsoft.com.br/geral/blob-stream/private"
 
 # Função para calcular o SHA-512 do conteúdo do arquivo
