@@ -83,11 +83,17 @@ def process_and_insert_file(uploaded_file, id_processo):
         """, next_id_dados_arquivo, guid, 1, len(file_content), file_hash, "application/pdf")
 
         # Obter próximo valor para `IdArquivo` e `Codigo`
-        cursor.execute("SELECT MAX(IdArquivo) + 1 FROM arq_Arquivo")
-        next_id_arquivo = cursor.fetchone()[0] or 818148
+        cursor.execute("SELECT MAX(IdArquivo) FROM arq_Arquivo")
+        max_id_arquivo = cursor.fetchone()[0]
+        next_id_arquivo = (max_id_arquivo + 1) if max_id_arquivo is not None else 1 
 
-        cursor.execute("SELECT MAX(TRY_CAST(Codigo AS INT)) + 1 FROM arq_Arquivo WHERE ISNUMERIC(Codigo) = 1")
-        next_codigo = cursor.fetchone()[0] or 818159
+        cursor.execute("""
+            SELECT MAX(TRY_CAST(Codigo AS INT)) 
+            FROM arq_Arquivo 
+            WHERE ISNUMERIC(Codigo) = 1
+        """)
+        max_codigo = cursor.fetchone()[0]
+        next_codigo = (max_codigo + 1) if max_codigo is not None else 1
 
         # Gerar o ROW_GUID no SQL
         row_guid = str(uuid.uuid4()).upper()
