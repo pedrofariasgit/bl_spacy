@@ -1,6 +1,7 @@
 import pyodbc
 import psycopg2
 from db_select import get_process_data
+import os
 
 # Função para gerar ID sequencial
 def generate_sequential_id(current_max_id):
@@ -43,10 +44,10 @@ def insert_ncm_data(ncm_list, idprocesso, id_conhecimento_embarque):
     try:
         connection = pyodbc.connect(
             'DRIVER={ODBC Driver 17 for SQL Server};'
-            'SERVER=kpm.sql.headcargo.com.br,9322;'
-            'DATABASE=HeadCARGO_KPM_HOMOLOGACAO;'
-            'UID=hc_kpm_ti;'
-            'PWD=971639DA-D739-4C0F-83D5-6E34037092FD'
+            f"SERVER={os.getenv('SQLSERVER_HOST')};"
+            f"DATABASE={os.getenv('SQLSERVER_DATABASE')};"
+            f"UID={os.getenv('SQLSERVER_USER')};"
+            f"PWD={os.getenv('SQLSERVER_PASSWORD')};"
         )
         cursor = connection.cursor()
 
