@@ -26,11 +26,11 @@ def process_ncm(ncm_value):
 # Função para obter o IdSerpro_NCM
 def get_serpro_ncm_id(ncm):
     connection = pyodbc.connect(
-        'DRIVER={ODBC Driver 17 for SQL Server};'
-        'SERVER=kpm.sql.headcargo.com.br,9322;'
-        'DATABASE=HeadCARGO_KPM_HOMOLOGACAO;'
-        'UID=hc_kpm_ti;'
-        'PWD=971639DA-D739-4C0F-83D5-6E34037092FD'
+            'DRIVER={ODBC Driver 17 for SQL Server};'
+            f"SERVER={os.getenv('SQLSERVER_HOST')};"
+            f"DATABASE={os.getenv('SQLSERVER_DATABASE')};"
+            f"UID={os.getenv('SQLSERVER_USER')};"
+            f"PWD={os.getenv('SQLSERVER_PASSWORD')};"
     )
     cursor = connection.cursor()
     query = "SELECT IdSerpro_NCM FROM cad_Serpro_NCM WHERE Codigo = ?"
