@@ -198,8 +198,10 @@ def main_page():
         bill_no = st.text_input("Bill of Lading Number", get_or_set("bill_no", google_data_json.get("B/L No", "")))
         booking = st.text_input("Booking", get_or_set("booking", google_data_json.get("Booking No", google_data_json.get("Booking", ""))))
 
-        # Tratamento para Container/Seals
+        # Garantir que container_seals seja uma string mesmo que esteja nulo
         container_seals = google_data_json.get("Container/Seals", "")
+        container_seals = str(container_seals) if container_seals is not None else ""
+
         if container_seals:
             parts = container_seals.split("/")
             if len(parts) == 2:
@@ -210,6 +212,7 @@ def main_page():
                 container, seals = "", ""
         else:
             container, seals = "", ""
+
 
 
         container_input = st.text_input("Container", get_or_set("container", container))
