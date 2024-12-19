@@ -109,7 +109,7 @@ def process_and_insert_file(uploaded_file, id_processo):
             VALUES (?, NULL, ?, NULL, ?, ?, ?, ?, 0, ?, NULL, 1, 1, ?, 0, 0, NULL, ?, NULL)
         """, 
             next_id_arquivo,       # IdArquivo
-            162,                   # IdUsuario_Criacao
+            416,                   # IdUsuario_Criacao
             next_codigo,           # Codigo
             file_name,             # Descricao
             file_name,             # Nome
