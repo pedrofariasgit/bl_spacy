@@ -162,70 +162,78 @@ def separate_number_and_type(number_pieces):
 
 def insert_into_other_tables(postgre_data, next_id_conhecimento, next_id_container):
     try:
+        # Conexão única
         connection = connect_to_sqlserver()
         cursor = connection.cursor()
 
-        # Separar o número de peças e o tipo de pacote
+        # Separar número de peças e tipo de pacote
         quantity, type_package = separate_number_and_type(postgre_data["number_pieces"])
+        quantity = quantity or None
+        type_package = type_package or None
 
-        # Se os valores não forem válidos, define como None
-        if not quantity:
-            quantity = None
-        if not type_package:
-            type_package = None
-
-        # Garantir que os campos gross_weight e measurement sejam convertidos corretamente para float
+        # Garantir conversão de valores
         try:
-            # Remove todas as letras e espaços extras antes de converter para float
-            gross_weight_cleaned = re.sub(r'[^\d,.]', '', postgre_data["gross_weight"]) if postgre_data["gross_weight"] else None
-            gross_weight = float(gross_weight_cleaned.replace(".", "").replace(",", ".")) if gross_weight_cleaned else None
-        except ValueError:
-            raise Exception(f"Erro ao converter 'gross_weight': {postgre_data['gross_weight']}")
+            gross_weight = float(re.sub(r'[^\d,\.]', '', postgre_data["gross_weight"]).replace(',', '.')) if postgre_data["gross_weight"] else None
+            measurement = float(re.sub(r'[^\d,\.]', '', postgre_data["measurement"]).replace(',', '.')) if postgre_data["measurement"] else None
+        except ValueError as e:
+            raise ValueError(f"Erro na conversão de valores: {e}")
 
-        try:
-            # Remove todas as letras e espaços extras antes de converter para float
-            measurement_cleaned = re.sub(r'[^\d,.]', '', postgre_data["measurement"]) if postgre_data["measurement"] else None
-            measurement = float(measurement_cleaned.replace(",", ".")) if measurement_cleaned else None
-        except ValueError:
-            raise Exception(f"Erro ao converter 'measurement': {postgre_data['measurement']}")
-        
-        # Converter o valor de wooden_package e kind_package
+        # Mapear wooden_package e kind_package
         wooden_package_mapped = map_wooden_package(postgre_data["wooden_package"])
         kind_package_mapped = map_kind_package(postgre_data["kind_package"])
-
         if kind_package_mapped is None:
-            raise Exception(f"Não foi possível mapear o kind_package: {postgre_data['kind_package']}")
+            raise ValueError(f"Não foi possível mapear kind_package: {postgre_data['kind_package']}")
 
-        # Inserção na tabela mov_Bill_Lading
+        # Concatenar Description_Of_Packages
+        description_of_packages = f"{quantity} - {postgre_data['description_packages']} - {wooden_package_mapped}"
+
+        # Inserção em mov_Bill_Lading
         insert_bill_lading = """
         INSERT INTO mov_Bill_Lading (IdConhecimento_Embarque, Booking_No, Port_Of_Loading, 
                                     Port_Of_Discharge, Description_Of_Packages, Gross_Weight, 
                                     Measurement, NCM_Description, Wood_Package, Number_Of_Pieces, Bloqueado, Impresso)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """
-
         data_bill_lading = (
             next_id_conhecimento,
             postgre_data["booking"],
             postgre_data["port_loading"],
             postgre_data["port_discharge"],
-            postgre_data["description_packages"],
-            gross_weight,  # Usar valor numérico convertido
-            measurement,   # Usar valor numérico convertido
+            description_of_packages,
+            gross_weight,
+            measurement,
             postgre_data["ncm"],
-            wooden_package_mapped,  # Valor mapeado para Wood_Package
-            quantity,  # Apenas a quantidade vai para Number_Of_Pieces
-            0,  # Valor fixo para Bloqueado
-            0   # Valor fixo para Impresso
+            wooden_package_mapped,
+            quantity,
+            0,  # Bloqueado
+            0   # Impresso
         )
-
+        print(f"Executando INSERT em mov_Bill_Lading com dados: {data_bill_lading}")
         cursor.execute(insert_bill_lading, data_bill_lading)
 
-        # Inserção na tabela mov_Logistica_Maritima_Container
+        # Recuperar Tipo_Carga para Consolidacao
+        select_tipo_carga = """
+        SELECT Tipo_Carga
+        FROM mov_Logistica_House
+        WHERE IdLogistica_House = ?
+        """
+        cursor.execute(select_tipo_carga, (postgre_data["idprocesso"],))
+        tipo_carga = cursor.fetchone()
+
+        if not tipo_carga:
+            raise Exception(f"Tipo_Carga não encontrado para IdLogistica_House: {postgre_data['idprocesso']}")
+
+        # Determinar Consolidacao
+        consolidacao = 1 if tipo_carga[0] == 3 else 2 if tipo_carga[0] == 4 else None
+        if consolidacao is None:
+            raise ValueError(f"Tipo_Carga inválido ({tipo_carga[0]}) para IdLogistica_House: {postgre_data['idprocesso']}")
+
+        # Inserção em mov_Logistica_Maritima_Container
         insert_maritima_container = """
         INSERT INTO mov_Logistica_Maritima_Container (IdLogistica_Maritima_Container, IdConhecimento_Embarque, IdLogistica_House, 
-                                                    Number, Seal, IdEquipamento_Maritimo, Quantity, Type_Packages, Tipo_Item_Carga, Gross_Weight, Measurement)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                                                    Number, Seal, IdEquipamento_Maritimo, Quantity, Type_Packages, Tipo_Item_Carga, 
+                                                    Gross_Weight, Measurement, Situacao_Devolucao, Consolidacao)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """
         data_maritima_container = (
             next_id_container,
@@ -234,19 +242,55 @@ def insert_into_other_tables(postgre_data, next_id_conhecimento, next_id_contain
             postgre_data["container"],
             postgre_data["seals"],
             kind_package_mapped,
-            quantity,  
-            type_package, 
-            1,  
-            gross_weight,  
-            measurement
+            quantity,
+            type_package,
+            1,  # Tipo_Item_Carga
+            gross_weight,
+            measurement,
+            4,  # Situacao_Devolucao
+            consolidacao
         )
+        print(f"Executando INSERT em mov_Logistica_Maritima_Container com dados: {data_maritima_container}")
         cursor.execute(insert_maritima_container, data_maritima_container)
 
+        # Atualizar tabelas existentes
+        update_existing_tables(cursor, postgre_data)
+
+        # Confirmar transação
         connection.commit()
-        connection.close()
 
     except Exception as error:
-        raise Exception(f"Erro ao inserir dados nas tabelas mov_Bill_Lading ou mov_Logistica_Maritima_Container: {error}")
+        connection.rollback()
+        raise Exception(f"Erro ao inserir dados nas tabelas: {error}")
+
+    finally:
+        connection.close()
+
+def update_existing_tables(cursor, postgre_data):
+    """
+    Atualiza as tabelas mov_Logistica_House e mov_Logistica_Maritima_House.
+    """
+    idlogistica_house = postgre_data["idprocesso"]
+    bill_no = postgre_data["bill_no"]
+    container = postgre_data["container"]
+
+    # Atualizar a coluna Conhecimentos na tabela mov_Logistica_House
+    update_lhs = """
+    UPDATE mov_Logistica_House
+    SET Conhecimentos = ?
+    WHERE IdLogistica_House = ?
+    """
+    print(f"Atualizando mov_Logistica_House com Conhecimentos: {bill_no}, IdLogistica_House: {idlogistica_house}")
+    cursor.execute(update_lhs, (bill_no, idlogistica_house))
+
+    # Atualizar a tabela mov_Logistica_Maritima_House
+    update_maritima_house = """
+    UPDATE mov_Logistica_Maritima_House
+    SET Containers = ?
+    WHERE IdLogistica_House = ?
+    """
+    print(f"Atualizando mov_Logistica_Maritima_House com Containers: {container}, IdLogistica_House: {idlogistica_house}")
+    cursor.execute(update_maritima_house, (container, idlogistica_house))
 
 
 # Função principal para integrar todo o fluxo
