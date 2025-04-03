@@ -5,10 +5,8 @@ import uuid
 import os
 from datetime import datetime
 import streamlit as st
-from dotenv import load_dotenv
 
-load_dotenv()
-TOKEN = st.secrets.get("TOKEN")
+TOKEN = "eyJhbGciOiJodHRwOi8vd3d3LnczLm9yZy8yMDAxLzA0L3htbGRzaWctbW9yZSNobWFjLXNoYTI1NiIsInR5cCI6IkpXVCJ9.eyJodHRwOi8vc2NoZW1hcy54bWxzb2FwLm9yZy93cy8yMDA1LzA1L2lkZW50aXR5L2NsYWltcy9uYW1laWRlbnRpZmllciI6IjU4YjVmNWU3LTgyYTItNDEyMS05ODM2LWY3YzliZmQ3NjM4YSIsImNvbnRhaW5lciI6ImtwbSIsImlzcyI6IkhlYWRTb2Z0IiwiYXVkIjoiRmlsZVN0cmVhbSJ9.BldzJwg8hP9eT7IiZoAE6eB7UbKoyVge9mx1fawHnVU"
 #TOKEN = os.getenv('TOKEN')
 STORAGE_API_URL = "https://api.headsoft.com.br/geral/blob-stream/private"
 

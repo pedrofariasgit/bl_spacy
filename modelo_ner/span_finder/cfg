@@ -1,0 +1,6 @@
+{
+  "min_length":null,
+  "max_length":null,
+  "threshold":0.5,
+  "spans_key":"my_spans"
+}
