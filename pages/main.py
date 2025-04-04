@@ -206,7 +206,7 @@ def main():
     
     # Navegação baseada na seleção do menu
     if menu_option == "Lançar Novo Draft":
-        st.switch_page("pages/bl_spacy.py")
+        st.switch_page("pages/draft.py")
     else:
         show_history()
 
