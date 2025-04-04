@@ -4,6 +4,14 @@ from datetime import datetime, timedelta
 import psycopg2
 import os
 import base64
+import locale
+
+
+try:
+    locale.setlocale(locale.LC_TIME, 'pt_BR.UTF-8')
+except locale.Error:
+    # Caso o locale não esteja disponível (como no Streamlit Cloud)
+    pass
 
 def get_base64_image(image_path):
     with open(image_path, "rb") as img_file:
@@ -81,7 +89,7 @@ def show_history():
         </style>
     """, unsafe_allow_html=True)
 
-    # Campos de data um embaixo do outro
+    
     data_inicial = st.date_input(
         "Data Inicial",
         datetime(2024, 10, 1),
