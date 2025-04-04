@@ -122,6 +122,7 @@ def show_history():
                 booking,
                 port_loading,
                 port_discharge,
+                container,
                 upload_date
             FROM pdf_info
             WHERE upload_date::date BETWEEN %s AND %s
@@ -141,6 +142,7 @@ def show_history():
                     "booking": "Booking",
                     "port_loading": "Porto de Origem",
                     "port_discharge": "Porto de Destino",
+                    "container": "Container",
                     "upload_date": "Data de Inserção"
                 },
                 hide_index=True

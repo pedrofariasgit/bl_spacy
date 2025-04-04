@@ -425,7 +425,7 @@ def main():
 
             if container_to_remove is not None:
                 st.session_state.containers.pop(container_to_remove)
-                st.experimental_rerun()
+                st.rerun()
 
 
             if st.button("Salvar e Treinar Modelo"):
