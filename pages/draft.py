@@ -20,6 +20,11 @@ import base64
 from storage_arq import process_and_insert_file
 from docx import Document 
 
+
+# Verifica se o usuário está logado, senão redireciona para a página principal (bl_spacy.py)
+if 'logged_in' not in st.session_state or not st.session_state['logged_in']:
+    st.switch_page("bl_spacy.py")
+
 # Carregar as variáveis de ambiente
 load_dotenv()
 GOOGLE_API_KEY = st.secrets.get("GOOGLE_API_KEY")

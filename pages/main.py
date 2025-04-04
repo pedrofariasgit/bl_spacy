@@ -7,6 +7,10 @@ import base64
 import locale
 
 
+# Verifica se o usuário está logado, senão redireciona para a página principal (bl_spacy.py)
+if 'logged_in' not in st.session_state or not st.session_state['logged_in']:
+    st.switch_page("bl_spacy.py")
+
 try:
     locale.setlocale(locale.LC_TIME, 'pt_BR.UTF-8')
 except locale.Error:
