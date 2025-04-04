@@ -156,6 +156,20 @@ def main():
         initial_sidebar_state="expanded"
     )
     
+    st.markdown("""
+    <style>
+    /* Esconde o nome da página no header */
+    header[data-testid="stHeader"] div:first-child {
+        display: none;
+    }
+
+    /* Esconde o menu lateral padrão do Streamlit (páginas da pasta /pages) */
+    section[data-testid="stSidebar"] ul {
+        display: none;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+
 
     # Verificar login
     if 'logged_in' not in st.session_state or not st.session_state['logged_in']:
