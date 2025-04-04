@@ -328,6 +328,8 @@ def main():
             # Lista para armazenar os containers
             containers_list = []
             
+            container_to_remove = None
+
             # Interface para cada container
             for i, container_data in enumerate(st.session_state.containers):
                 with st.expander(f"Container {i+1}", expanded=True):
@@ -401,8 +403,8 @@ def main():
                     
                     # Botão para remover container
                     if st.button("Remover Container", key=f"remove_{i}"):
-                        st.session_state.containers.pop(i)
-                        st.experimental_rerun()
+                        container_to_remove = i
+
                     
                     # Atualiza os dados do container na session_state
                     st.session_state.containers[i] = {
@@ -420,6 +422,11 @@ def main():
                     
                     # Adiciona à lista de containers
                     containers_list.append(st.session_state.containers[i])
+
+            if container_to_remove is not None:
+                st.session_state.containers.pop(container_to_remove)
+                st.experimental_rerun()
+
 
             if st.button("Salvar e Treinar Modelo"):
                 if db_data:
