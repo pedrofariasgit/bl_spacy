@@ -50,7 +50,7 @@ def login_page():
         if username in usernames:
             user = next(user for user in users if user['username'] == username)
             if user['password'] == password:
-                st.session_state['logged_in'] = True
+                st.session_state['logged_in'] = False
             else:
                 st.error("Senha incorreta")
         else:
@@ -173,7 +173,8 @@ def main():
     
     # Verificar login
     if 'logged_in' not in st.session_state or not st.session_state['logged_in']:
-        st.switch_page("../../bl_spacy/bl_spacy.py")
+        st.session_state['logged_in'] = False
+        st.experimental_rerun()
         return
     
     # Carregar o modelo SpaCy
