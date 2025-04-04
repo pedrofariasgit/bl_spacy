@@ -68,6 +68,15 @@ def show_history():
     """Mostra o histórico de lançamentos de draft"""
     st.title("Histórico de Lançamentos de Draft")
 
+    # CSS para deixar os campos de data menores
+    st.markdown("""
+    <style>
+    .small-date-input input {
+        max-width: 200px;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+
     # CSS para ajustar o layout das datas
     st.markdown("""
         <style>
@@ -89,7 +98,6 @@ def show_history():
         </style>
     """, unsafe_allow_html=True)
 
-    
     data_inicial = st.date_input(
         "Data Inicial",
         datetime(2024, 10, 1),
@@ -101,8 +109,9 @@ def show_history():
         datetime.now(),
         key="data_final"
     )
- 
-    
+
+
+        
     # Grid de Resultados
     conn = conectar_bd()
     if conn:

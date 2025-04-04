@@ -156,21 +156,7 @@ def main():
         initial_sidebar_state="expanded"
     )
     
-    # Esconder os nomes das páginas no canto, mas manter o seletor de tema
-    st.markdown("""
-        <style>
-        /* Esconder apenas os nomes das páginas no header, mantendo o seletor de tema */
-        header[data-testid="stHeader"] div:nth-child(1) {
-            display: none;
-        }
-        
-        /* Esconder os nomes das páginas no sidebar */
-        [data-testid="stSidebarNav"] {
-            display: none;
-        }
-        </style>
-    """, unsafe_allow_html=True)
-    
+
     # Verificar login
     if 'logged_in' not in st.session_state or not st.session_state['logged_in']:
         st.session_state['logged_in'] = False
