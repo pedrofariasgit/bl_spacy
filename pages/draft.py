@@ -282,6 +282,7 @@ def main():
                 bill_no = st.text_input("Bill of Lading Number", get_or_set("bill_no", google_data_json.get("B/L No", "")), key="bill_no_input")
                 booking = st.text_input("Booking", get_or_set("booking", google_data_json.get("Booking No", google_data_json.get("Booking", ""))), key="booking_input")
                 wooden_package = st.text_input("Wooden Package", get_or_set("wooden_package", google_data_json.get("WOODEN PACKAGE", "")), key="wooden_package_input")
+                number_pieces = st.text_input("Number of Pieces", get_or_set("number_pieces", google_data_json.get("Number of pieces", "")), key="number_pieces_input")
                 gross_weight = st.text_input("Gross Weight Cargo", get_or_set("gross_weight", google_data_json.get("Gross Weight Cargo", "")), key="gross_weight_input")
                 measurement = st.text_input("Measurement", get_or_set("measurement", google_data_json.get("Measurement", "")), key="measurement_input")
 
