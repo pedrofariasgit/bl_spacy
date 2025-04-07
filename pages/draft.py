@@ -384,25 +384,15 @@ def main():
                             format_func=lambda x: x[0],
                             index=[x[1] for x in equipment_options].index(container_data['id_equipamento_maritimo']) if container_data['id_equipamento_maritimo'] else 0
                         )
-                        quantity_input = st.text_input(
-                            "Quantidade",
-                            key=f"quantity_{i}",
-                            value=container_data['quantity']
-                        )
-                        type_packages_input = st.text_input(
-                            "Tipo de Pacotes",
-                            key=f"type_packages_{i}",
-                            value=container_data['type_packages']
-                        )
-                    
+                                            
                     with col2:
                         gross_weight_input = st.text_input(
-                            "Peso Bruto",
+                            "Gross Wweight",
                             key=f"gross_weight_{i}",
                             value=container_data['gross_weight']
                         )
                         measurement_input = st.text_input(
-                            "Medida",
+                            "Measurement",
                             key=f"measurement_{i}",
                             value=container_data['measurement']
                         )
@@ -417,8 +407,8 @@ def main():
                         'container': container_input,
                         'seals': seals_input,
                         'id_equipamento_maritimo': id_equipamento[1],
-                        'quantity': quantity_input,
-                        'type_packages': type_packages_input,
+                        'quantity': "1",  # valor fixo
+                        'type_packages': kind_package,
                         'tipo_item_carga': 1,
                         'gross_weight': gross_weight_input,
                         'measurement': measurement_input,
