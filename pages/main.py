@@ -5,7 +5,7 @@ import psycopg2
 import os
 import base64
 import locale
-
+from dotenv import load_dotenv
 
 # Verifica se o usuário está logado, senão redireciona para a página principal (bl_spacy.py)
 if 'logged_in' not in st.session_state or not st.session_state['logged_in']:
@@ -53,20 +53,27 @@ def add_logo():
     )
     return logo_base64
 
+
 def conectar_bd():
-    """Conecta ao banco de dados PostgreSQL"""
     try:
+        dbname = st.secrets["postgres"]["DB_NAME"]
+        user = st.secrets["postgres"]["DB_USER"]
+        password = st.secrets["postgres"]["DB_PASSWORD"]
+        host = st.secrets["postgres"]["DB_HOST"]
+        port = st.secrets["postgres"]["DB_PORT"]
+
         conn = psycopg2.connect(
-            dbname="pdf_data",
-            user="kpm",
-            password="@Kpm<102030>",
-            host="89.117.17.6",
-            port="5432"
+            dbname=dbname,
+            user=user,
+            password=password,
+            host=host,
+            port=port
         )
         return conn
     except Exception as e:
         st.error(f"Erro ao conectar ao banco de dados: {str(e)}")
         return None
+    
 
 def show_history():
     """Mostra o histórico de lançamentos de draft"""
