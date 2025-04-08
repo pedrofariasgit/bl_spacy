@@ -235,23 +235,25 @@ def insert_into_other_tables(postgre_data, next_id_conhecimento, next_id_contain
                                                     Gross_Weight, Measurement, Situacao_Devolucao, Consolidacao)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """
-        data_maritima_container = (
-            next_id_container,
-            next_id_conhecimento,
-            postgre_data["idprocesso"],
-            postgre_data["container"],
-            postgre_data["seals"],
-            kind_package_mapped,
-            quantity,
-            type_package,
-            1,  # Tipo_Item_Carga
-            gross_weight,
-            measurement,
-            4,  # Situacao_Devolucao
-            consolidacao
-        )
-        print(f"Executando INSERT em mov_Logistica_Maritima_Container com dados: {data_maritima_container}")
+        for container_data in postgre_data["containers"]:
+            data_maritima_container = (
+                next_id_container,
+                next_id_conhecimento,
+                postgre_data["idprocesso"],
+                container_data["container"],
+                container_data["seals"],
+                container_data["id_equipamento_maritimo"],
+                container_data["quantity"],
+                container_data["type_packages"],
+                container_data["tipo_item_carga"],
+                float(re.sub(r'[^\d,\.]', '', container_data["gross_weight"]).replace(',', '.')) if container_data["gross_weight"] else None,
+                float(re.sub(r'[^\d,\.]', '', container_data["measurement"]).replace(',', '.')) if container_data["measurement"] else None,
+                container_data["situacao_devolucao"],
+                consolidacao
+            )
+        print(f"INSERT Container: {data_maritima_container}")
         cursor.execute(insert_maritima_container, data_maritima_container)
+        next_id_container += 1  # incrementa o ID para cada container
 
         # Atualizar tabelas existentes
         update_existing_tables(cursor, postgre_data)
