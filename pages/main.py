@@ -142,7 +142,11 @@ def show_history():
             df = pd.read_sql_query(query, conn, params=[data_inicial, data_final])
             
             # Formatar a data
-            df['upload_date'] = pd.to_datetime(df['upload_date'], utc=True).dt.strftime('%d/%m/%Y %H:%M')
+            # Formatar a data ajustando para o fuso horário de São Paulo
+            df['upload_date'] = pd.to_datetime(df['upload_date'], utc=True)\
+                                .dt.tz_convert('America/Sao_Paulo')\
+                                .dt.strftime('%d/%m/%Y %H:%M')
+
             
             # Mostrar dados em uma tabela
             st.dataframe(
