@@ -3,7 +3,8 @@ from datetime import datetime
 import re
 import os
 import streamlit as st
-
+from datetime import datetime
+import pytz
 
 # Função para normalizar números (remove vírgulas e pontos desnecessários)
 def normalize_number(number_str):
@@ -42,10 +43,12 @@ def insert_data_postgre(bill_no, booking, container_input, seals_input, number_p
         VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
         """
 
+        upload_date = datetime.now(pytz.timezone("America/Sao_Paulo"))
+
         data = (
             bill_no, booking, container_input, seals_input, number_pieces, gross_weight, measurement, ncm, wooden_package, 
             port_loading, port_discharge, final_place, kind_package, description_packages, 
-            numero_processo_input, idcia, idprocesso, datetime.now()
+            numero_processo_input, idcia, idprocesso, upload_date
         )
 
         # Executar o comando de inserção
