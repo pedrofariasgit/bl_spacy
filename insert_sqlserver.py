@@ -230,11 +230,13 @@ def insert_into_other_tables(postgre_data, next_id_conhecimento, next_id_contain
 
         # Inserção em mov_Logistica_Maritima_Container
         insert_maritima_container = """
-        INSERT INTO mov_Logistica_Maritima_Container (IdLogistica_Maritima_Container, IdConhecimento_Embarque, IdLogistica_House, 
-                                                    Number, Seal, IdEquipamento_Maritimo, Quantity, Type_Packages, Tipo_Item_Carga, 
-                                                    Gross_Weight, Measurement, Situacao_Devolucao, Consolidacao)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO mov_Logistica_Maritima_Container (
+            IdLogistica_Maritima_Container, IdConhecimento_Embarque, IdLogistica_House, 
+            Number, Seal, IdEquipamento_Maritimo, Quantity, Type_Packages, Tipo_Item_Carga, 
+            Gross_Weight, Measurement, Situacao_Devolucao, Consolidacao
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """
+
         for container_data in postgre_data["containers"]:
             data_maritima_container = (
                 next_id_container,
@@ -251,9 +253,10 @@ def insert_into_other_tables(postgre_data, next_id_conhecimento, next_id_contain
                 container_data["situacao_devolucao"],
                 consolidacao
             )
-        print(f"INSERT Container: {data_maritima_container}")
-        cursor.execute(insert_maritima_container, data_maritima_container)
-        next_id_container += 1  # incrementa o ID para cada container
+            print(f"INSERT Container: {data_maritima_container}")
+            cursor.execute(insert_maritima_container, data_maritima_container)
+            next_id_container += 1  # incrementa o ID para cada container
+
 
         # Atualizar tabelas existentes
         update_existing_tables(cursor, postgre_data)

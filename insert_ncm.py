@@ -11,16 +11,11 @@ def generate_sequential_id(current_max_id):
 def process_ncm(ncm_value):
     ncm_list = []
     if ncm_value:
-        ncm_value = ncm_value.strip()  # Remover espaços em branco extras
-        # Se o NCM tiver 8 dígitos (formato 0303.63.00), pegar os primeiros 4 dígitos
-        if len(ncm_value) == 8 and '.' in ncm_value:
-            ncm_list.append(ncm_value[:4])
-        # Se o NCM tiver múltiplos valores separados por vírgula, adicionar todos eles (4 dígitos)
-        elif ',' in ncm_value:
-            ncm_list = list(set([ncm[:4].strip() for ncm in ncm_value.split(',')]))  # Usar set() para evitar duplicados
-        else:
-            ncm_list.append(ncm_value[:4])  # Caso seja um NCM com 4 dígitos
-    return ncm_list
+        for ncm in ncm_value.split(","):
+            cleaned = ncm.strip().replace(".", "")  # Remove pontos e espaços
+            if cleaned and len(cleaned) >= 4:
+                ncm_list.append(cleaned[:4])
+    return list(set(ncm_list))  # Remove duplicados
 
 
 # Função para obter o IdSerpro_NCM
@@ -62,6 +57,9 @@ def insert_ncm_data(ncm_list, idprocesso, id_conhecimento_embarque):
                 # Gerar o próximo IdBill_Lading_NCM
                 next_id_bill_lading_ncm = generate_sequential_id(current_max_id)
 
+                # Log do que vai ser inserido
+                print(f"Inserindo NCM: {ncm} | IdSerpro_NCM: {serpro_ncm_id} | IdProcesso: {idprocesso} | IdConhecimento: {id_conhecimento_embarque}")
+
                 # Inserir o NCM na tabela mov_Bill_Lading_NCM, agora com IdConhecimento_Embarque
                 insert_query = """
                 INSERT INTO mov_Bill_Lading_NCM (IdBill_Lading_NCM, IdSerpro_NCM, IdLogistica_House, IdConhecimento_Embarque)
@@ -69,13 +67,15 @@ def insert_ncm_data(ncm_list, idprocesso, id_conhecimento_embarque):
                 """
                 cursor.execute(insert_query, (next_id_bill_lading_ncm, serpro_ncm_id, idprocesso, id_conhecimento_embarque))
                 current_max_id = next_id_bill_lading_ncm
+            else:
+                print(f"NCM não encontrado na tabela cad_Serpro_NCM: {ncm}")
 
         connection.commit()
         connection.close()
-        print(f"Dados inseridos com sucesso na tabela mov_Bill_Lading_NCM!")
+        print(f"NCM inserido com sucesso!")
 
     except Exception as e:
-        print(f"Erro ao inserir dados na tabela mov_Bill_Lading_NCM: {e}")
+        print(f"Erro ao inserir NCM: {e}")
 
 # Função principal para processar e inserir NCMs
 def process_and_insert_ncm(ncm_value, idprocesso, id_conhecimento_embarque):

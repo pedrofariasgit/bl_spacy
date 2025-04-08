@@ -453,7 +453,9 @@ def main():
                             "wooden_package": wooden_package,
                             "number_pieces": number_pieces,
                             "containers": containers_list,
-                            "kind_package": db_data["kind_package"]
+                            "kind_package": db_data["kind_package"],
+                            "container": container_input,
+                            "seals": seals_input            
                         })
                         st.write("Dados inseridos com sucesso no HeadCargo!")
                         process_and_insert_ncm(ncm, db_data["idprocesso"], next_id_conhecimento)
