@@ -111,7 +111,7 @@ def show_history():
 
     data_inicial = st.date_input(
         "Data Inicial",
-        datetime(2024, 10, 1),
+        datetime(2025, 1, 1),
         key="data_inicial"
     )
     
@@ -120,7 +120,6 @@ def show_history():
         datetime.now(),
         key="data_final"
     )
-
 
         
     # Grid de Resultados
