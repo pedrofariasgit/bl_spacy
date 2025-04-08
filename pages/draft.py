@@ -302,19 +302,19 @@ def main():
             
             # Inicializa a lista de containers na session_state se não existir
             if 'containers' not in st.session_state:
-                # Preenche o primeiro container com os dados da IA
                 st.session_state.containers = [{
                     'container': container,
                     'seals': seals,
-                    'id_equipamento_maritimo': None,  # Será selecionado pelo usuário
-                    'quantity': number_pieces,  # Usando o número de peças como quantidade
-                    'type_packages': kind_package,  # Usando o tipo de pacote do banco
+                    'id_equipamento_maritimo': None,
+                    'quantity': "1",
+                    'type_packages': kind_package,
                     'tipo_item_carga': 1,
                     'gross_weight': gross_weight,
                     'measurement': measurement,
                     'situacao_devolucao': 4,
-                    'consolidacao': 2  # Default para "Não"
+                    'consolidacao': 2
                 }]
+
             
             # Botão para adicionar novo container
             if st.button("+ Adicionar Container"):
