@@ -386,15 +386,18 @@ def main():
                         )
                                             
                     with col2:
+                        gross_weight_value = container_data['gross_weight'] or gross_weight
+                        measurement_value = container_data['measurement'] or measurement
+
                         gross_weight_input = st.text_input(
-                            "Gross Wweight",
+                            "Gross Weight",
                             key=f"gross_weight_{i}",
-                            value=container_data['gross_weight']
+                            value=gross_weight_value
                         )
                         measurement_input = st.text_input(
                             "Measurement",
                             key=f"measurement_{i}",
-                            value=container_data['measurement']
+                            value=measurement_value
                         )
                     
                     # Botão para remover container
