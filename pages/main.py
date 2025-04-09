@@ -7,6 +7,7 @@ import base64
 import locale
 from dotenv import load_dotenv
 
+
 # Verifica se o usuário está logado, senão redireciona para a página principal (bl_spacy.py)
 if 'logged_in' not in st.session_state or not st.session_state['logged_in']:
     st.switch_page("bl_spacy.py")
