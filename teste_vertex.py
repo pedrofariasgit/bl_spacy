@@ -2,9 +2,13 @@ import fitz
 import json
 import google.generativeai as genai
 import streamlit as st
-import pytesseract
-from PIL import Image
-import io
+try:
+    import pytesseract
+    from PIL import Image
+    import io
+    OCR_AVAILABLE = True
+except:
+    OCR_AVAILABLE = False
 
 
 pytesseract.pytesseract.tesseract_cmd = r"C:\Users\kpm_t\AppData\Local\Programs\Tesseract-OCR\tesseract.exe"
@@ -59,13 +63,18 @@ def extract_text_smart(pdf_bytes):
     """Tenta extrair texto usando PyMuPDF; se falhar ou vier pouco texto, usa OCR."""
     text = extract_text_from_all_pages(pdf_bytes)
 
+    # Se estiver no Streamlit Cloud -> SEM OCR
+    if not OCR_AVAILABLE:
+        return text
+
     # Se o texto tiver menos que 200 caracteres, provavelmente é imagem
     if len(text.strip()) < 200:
         ocr_text = extract_text_with_ocr(pdf_bytes)
         if len(ocr_text.strip()) > len(text.strip()):
-            return ocr_text  # usa o OCR se for melhor
+            return ocr_text  
 
     return text
+
 
 
 
