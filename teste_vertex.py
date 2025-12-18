@@ -15,64 +15,61 @@ def extract_text_from_all_pages(pdf_bytes):
         return ""
 
 
-def find_specific_word_with_gemini(pdf_bytes, model_name="gemini-2.0-flash"):
-    """Extrai campos específicos do texto do PDF usando Gemini."""
-
+def find_specific_word_with_gemini(pdf_bytes, model_name='gemini-2.0-flash'):
     try:
         pdf_text = extract_text_from_all_pages(pdf_bytes)
 
         prompt = f"""
-Você é um extrator de dados especialista em documentos de transporte internacional.
+Você é um especialista em leitura de documentos marítimos (Bill of Lading).
+Extraia APENAS os campos abaixo, com extrema precisão, seguindo as regras:
 
-Leia o texto abaixo extraído de um Bill of Lading e RETORNE SOMENTE um JSON válido.
-Nenhum texto explicativo deve ser incluído fora do JSON.
+### REGRAS IMPORTANTES
+1. "Bill of Lading Number" (B/L No):
+   - Sempre é um código do armador.
+   - Geralmente aparece no topo do documento.
+   - Formato típico: 3 letras + vários números (ex: MEDUVF628071).
+   - **NUNCA** deve ser igual ao Booking.
+   - **Nunca** contém apenas números.
 
-TEXTO DO DOCUMENTO:
-----------------------
+2. "Booking No":
+   - É um número normalmente apenas numérico.
+   - Pode aparecer como "Booking Ref." ou "Booking".
+   - Geralmente aparece nas seções de dados do navio.
+
+3. Se houver ambiguidade, escolha a opção que MELHOR segue o padrão esperado.
+
+Agora EXTRAIA estes campos em JSON:
+
+- Booking No
+- Bill of Lading Number (B/L No)
+- Container/Seals
+- Number of pieces
+- Gross Weight Cargo
+- Measurement
+- NCM
+- WOODEN PACKAGE
+
+TEXTO DO PDF:
 {pdf_text}
-----------------------
 
-EXTRAIA OS CAMPOS ABAIXO:
-
-- Booking No → número da reserva (formas válidas: ABC1234567, EKG98765432, etc.)
-- B/L No → número do conhecimento (NUNCA contém "/")
-- Container/Seals → número do container e lacre separados por "/"
-- Number of pieces → exemplo: "5200 CARTONS"
-- Gross Weight Cargo → número decimal (ex: "1000.000")
-- Measurement → número decimal (ex: "50.000")
-- NCM → código da mercadoria (ex: "071021")
-- WOODEN PACKAGE → "APPLICABLE" ou "NOT APPLICABLE"
-
-RETORNE SOMENTE UM JSON VÁLIDO COMO ESTE EXEMPLO:
-
-{{
-  "Booking No": "",
-  "B/L No": "",
-  "Container/Seals": "",
-  "Number_Pieces": "",
-  "Gross Weight Cargo": "",
-  "Measurement": "",
-  "NCM": "",
-  "WOODEN PACKAGE": ""
-}}
+Responda SOMENTE o JSON.
 """
 
         model = genai.GenerativeModel(model_name)
         response = model.generate_content(prompt)
 
-        # Garante retorno limpo
+        # -------------------------------
+        # 🔥 LIMPEZA E VALIDAÇÃO DO JSON
+        # -------------------------------
         text = response.text.strip()
 
-        # Remove possíveis marcadores de bloco
         text = text.replace("```json", "").replace("```", "").strip()
 
-        # Tenta validar o JSON
         try:
             json.loads(text)
         except:
             st.warning("A IA enviou um JSON inválido, tentando corrigir automaticamente...")
             try:
-                # Pequena correção automática
                 text = text.replace("\n", "").replace("\r", "")
                 json.loads(text)
             except:
@@ -82,5 +79,5 @@ RETORNE SOMENTE UM JSON VÁLIDO COMO ESTE EXEMPLO:
         return text
 
     except Exception as e:
-        st.error(f"Erro ao processar PDF com Gemini: {e}")
+        st.error(f"Erro ao processar o PDF com o Google Vertex: {e}")
         return "{}"
