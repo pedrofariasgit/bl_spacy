@@ -13,7 +13,7 @@ import pandas as pd
 from insert_postgre import insert_data_postgre
 from insert_sqlserver import main_integration  
 from db_select import get_process_data
-from bl_spacy.teste_vertex_old import find_specific_word_with_gemini
+from bl_spacy.teste_vertex import find_specific_word_with_gemini
 from datetime import datetime
 from insert_ncm import process_and_insert_ncm
 import base64
