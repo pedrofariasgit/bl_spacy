@@ -309,8 +309,8 @@ def main():
                     'quantity': "1",
                     'type_packages': kind_package if 'kind_package' in locals() else "",
                     'tipo_item_carga': 1,
-                    'gross_weight': gross_weight,
-                    'measurement': measurement,
+                    'gross_weight': gross_weight if 'gross_weight' in locals() else "",
+                    'measurement': measurement if 'measurement' in locals() else "",
                     'situacao_devolucao': 4,
                     'consolidacao': 2
                 }]
