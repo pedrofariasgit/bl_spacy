@@ -303,11 +303,11 @@ def main():
             # Inicializa a lista de containers na session_state se não existir
             if 'containers' not in st.session_state:
                 st.session_state.containers = [{
-                    'container': container,
-                    'seals': seals,
+                    'container': container if 'container' in locals() else "",
+                    'seals': seals if 'seals' in locals() else "",
                     'id_equipamento_maritimo': None,
                     'quantity': "1",
-                    'type_packages': kind_package,
+                    'type_packages': kind_package if 'kind_package' in locals() else "",
                     'tipo_item_carga': 1,
                     'gross_weight': gross_weight,
                     'measurement': measurement,
